@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tax Notice Triage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f5f6f8; --panel:#ffffff; --panel2:#f8f9fb; --line:#e7e9ef; --line2:#d7dbe4;
+  --ink:#161a23; --ink2:#3d4454; --muted:#687083; --faint:#9aa1b1;
+  --ai:#7c3aed; --ai-bg:#f3eefe;
+  --code:#0d9488; --code-bg:#e3f5f2;
+  --hum:#b45309; --hum-bg:#fdf3e2;
+  --ok:#15803d; --ok-bg:#e7f6ec;
+  --bad:#dc2626; --bad-bg:#fdeded;
+  --warn:#c2410c; --warn-bg:#fff1e7;
+  --hl:#fff1bf;
+  --r:16px; --shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{margin:0;color:var(--ink);font:14.5px/1.6 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+svg.i{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+svg.i.sm{width:14px;height:14px} svg.i.lg{width:22px;height:22px}
+
+/* header */
+header{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:16px 32px;display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.brand{display:flex;gap:10px;align-items:center}
+.logo{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,var(--ai),var(--code));color:#fff}
+.brand h1{font-size:16px;margin:0;font-weight:700;letter-spacing:-.01em}
+.brand .sub{font-size:12px;color:var(--muted)}
+.legend{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;gap:6px;align-items:center;font-size:12px;font-weight:500;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--panel)}
+.chip.ai{color:var(--ai);background:var(--ai-bg);border-color:transparent}
+.chip.code{color:var(--code);background:var(--code-bg);border-color:transparent}
+.chip.hum{color:var(--hum);background:var(--hum-bg);border-color:transparent}
+.switch{margin-left:auto;display:flex;gap:10px;align-items:center;font-size:13px;color:var(--ink2);cursor:pointer;user-select:none}
+.switch input{display:none}
+.switch .track{width:38px;height:22px;border-radius:999px;background:var(--line2);position:relative;transition:.2s}
+.switch .track::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:.2s}
+.switch input:checked + .track{background:var(--code)}
+.switch input:checked + .track::after{left:19px}
+
+/* layout */
+.wrap{display:grid;grid-template-columns:260px minmax(0,1fr) 390px;gap:32px;padding:32px;max-width:1720px;margin:0 auto}
+nav.cases{display:flex;flex-direction:column;gap:6px;min-width:0}
+aside{min-width:0}
+.grp{display:flex;gap:8px;align-items:center;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:22px 0 8px 8px}
+.grp:first-child{margin-top:0}
+.cbtn{all:unset;cursor:pointer;display:grid;grid-template-columns:auto 1fr;gap:2px 10px;align-items:center;padding:12px 14px;border-radius:12px;border:1px solid transparent}
+.cbtn:hover{background:var(--panel)}
+.cbtn.on{background:var(--panel);border-color:var(--line2);box-shadow:var(--shadow)}
+.cbtn .dot{width:8px;height:8px;border-radius:50%;grid-row:span 2}
+.cbtn .cid{font:500 11px var(--mono);color:var(--muted)}
+.cbtn .ct{font-size:13px;color:var(--ink2);line-height:1.35}
+.cbtn.on .ct{color:var(--ink)}
+.navkey{margin-top:22px;padding:14px 16px;border-radius:10px;border:1px dashed var(--line2);font-size:11.5px;color:var(--muted);display:grid;gap:5px}
+.navkey span{display:flex;gap:8px;align-items:center}
+
+main{display:flex;flex-direction:column;gap:28px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:28px 32px;box-shadow:var(--shadow)}
+
+/* hero */
+.eyebrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.pill{display:inline-flex;gap:5px;align-items:center;font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:999px}
+.pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.bad{background:var(--bad-bg);color:var(--bad)} .pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill.ghost{border:1px solid var(--line2);color:var(--ink2)}
+.hero h2{font-size:24px;letter-spacing:-.02em;margin:14px 0 24px;font-weight:700}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.kpi{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.kpi .k{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
+.kpi .v{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em;line-height:1.25;overflow-wrap:anywhere}
+.kpi .s{font-size:12px;color:var(--muted)}
+.v.ok{color:var(--ok)} .v.bad{color:var(--bad)} .v.warn{color:var(--warn)}
+.banner{margin-top:24px;display:flex;gap:16px;align-items:center;padding:18px 22px;border-radius:14px}
+.banner .bi{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none}
+.banner b{display:block;font-size:15.5px;margin-bottom:2px}
+.banner span{font-size:13px;color:var(--ink2)}
+.banner.ok{background:var(--ok-bg)} .banner.ok .bi{background:var(--ok);color:#fff}
+.banner.warn{background:var(--warn-bg)} .banner.warn .bi{background:var(--warn);color:#fff}
+.banner.bad{background:var(--bad-bg)} .banner.bad .bi{background:var(--bad);color:#fff}
+
+/* pipeline */
+.pipe{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;position:relative}
+.node{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;position:relative;padding:8px 6px 4px}
+.node::before{content:"";position:absolute;top:32px;left:-50%;width:100%;height:2px;background:var(--line2);z-index:0}
+.node:first-child::before{display:none}
+.node.done::before{background:linear-gradient(90deg,var(--line2),var(--ok))}
+.node .ring{position:relative;z-index:1;width:50px;height:50px;border-radius:15px;display:grid;place-items:center;background:var(--panel);border:1.5px solid var(--line2)}
+.node.ai .ring{color:var(--ai)} .node.code .ring{color:var(--code)} .node.hum .ring{color:var(--hum)} .node.mix .ring{color:var(--ai)}
+.node .st{position:absolute;right:-6px;bottom:-6px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--panel)}
+.node .st.ok{background:var(--ok);color:#fff} .node .st.bad{background:var(--bad);color:#fff} .node .st.warn{background:var(--warn);color:#fff} .node .st.skip{background:var(--line2);color:var(--muted)}
+.node .nl{font-size:12px;font-weight:600;line-height:1.3;color:var(--ink2)}
+.node .nn{font:500 10.5px var(--mono);color:var(--faint)}
+.node.skip .ring{opacity:.4} .node.skip .nl{color:var(--faint)}
+.node:hover .ring{border-color:var(--ink2)}
+
+/* steps */
+.step{scroll-margin-top:80px}
+.sh{display:flex;gap:16px;align-items:flex-start;margin-bottom:24px}
+.sh .si{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none}
+.sh.ai .si{background:var(--ai-bg);color:var(--ai)} .sh.code .si{background:var(--code-bg);color:var(--code)} .sh.hum .si{background:var(--hum-bg);color:var(--hum)} .sh.mix .si{background:linear-gradient(135deg,var(--ai-bg),var(--code-bg));color:var(--ai)} .sh.test .si{background:var(--panel2);color:var(--ink2)}
+.sh h3{margin:0 0 2px;font-size:17px;font-weight:650;letter-spacing:-.01em;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sh h3 .n{font:500 11px var(--mono);color:var(--faint)}
+.sh p{margin:4px 0 0;font-size:13.5px;color:var(--muted);max-width:640px}
+.who{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+
+/* items */
+.rows{display:grid;gap:12px}
+.row{display:grid;grid-template-columns:minmax(0,1.4fr) repeat(3,minmax(0,1fr)) auto;gap:16px;align-items:center;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px 20px}
+.row .lab{font-size:11.5px;color:var(--muted);display:block;margin-bottom:2px}
+.row .val{font-weight:600;font-variant-numeric:tabular-nums}
+.row .name{font-weight:600} .row .payer{font-size:12px;color:var(--muted)}
+.checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.ck{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-size:13px}
+.ck .ic{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;flex:none}
+.ck.ok .ic{background:var(--ok-bg);color:var(--ok)} .ck.bad .ic{background:var(--bad-bg);color:var(--bad)} .ck.bad{border-color:#f5b5b5}
+
+.cmp{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:16px;align-items:stretch;margin-bottom:20px}
+.cmpbox{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px 20px}
+.cmpbox .t{display:flex;gap:6px;align-items:center;font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.cmpbox .l{display:flex;justify-content:space-between;gap:8px;font-size:13.5px;padding:5px 0;flex-wrap:wrap}
+.cmpbox .l b{font-variant-numeric:tabular-nums}
+.eq{display:grid;place-items:center;width:40px}
+.eq span{width:34px;height:34px;border-radius:50%;display:grid;place-items:center}
+.eq.ok span{background:var(--ok-bg);color:var(--ok)} .eq.bad span{background:var(--bad-bg);color:var(--bad)}
+.itemname{font-weight:600;margin:4px 0 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* gap bar */
+.gap{margin:4px 0 22px}
+.gaphead{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.gaphead b{font-size:15px}
+.bar{display:flex;height:36px;border-radius:10px;overflow:hidden;background:var(--panel2);border:1px solid var(--line)}
+.seg{display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;min-width:4px}
+.seg.exp{background:var(--code)} .seg.exp.rem{background:#14b8a6} .seg.exp+.seg.exp{border-left:2px solid var(--panel)}
+.seg.res{background:repeating-linear-gradient(135deg,var(--bad) 0 6px,#ef5350 6px 12px)}
+.gapkey{display:flex;gap:20px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--muted)}
+.gapkey i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+
+.prop{border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin:14px 0;background:var(--panel2)}
+.prop.rej{border-color:#f5b5b5}
+.ptop{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.ptop .ttl{font-weight:600}
+.ptop .rid{font:500 11px var(--mono);color:var(--faint)}
+.conf{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);margin-left:auto}
+.meter{width:70px;height:6px;border-radius:99px;background:var(--line2);overflow:hidden}
+.meter i{display:block;height:100%;border-radius:99px}
+.why{font-size:13.5px;color:var(--ink2);margin-top:12px;display:flex;gap:8px}
+.why svg{color:var(--ai);margin-top:2px}
+.ev{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:14px;font-size:12px;color:var(--muted)}
+.call{display:flex;gap:12px;align-items:flex-start;padding:14px 18px;border-radius:12px;margin:14px 0 0;font-size:13.5px}
+.call svg{margin-top:1px}
+.call.bad{background:var(--bad-bg);color:#7f1d1d} .call.bad svg{color:var(--bad)}
+.call.warn{background:var(--warn-bg);color:#7c2d12} .call.warn svg{color:var(--warn)}
+.call.ok{background:var(--ok-bg);color:#14532d} .call.ok svg{color:var(--ok)}
+.call.hum{background:var(--hum-bg);color:#78350f} .call.hum svg{color:var(--hum)}
+.call b{color:var(--ink)}
+hr.sep{border:0;border-top:1px solid var(--line);margin:30px 0}
+
+.cite{all:unset;cursor:pointer;font:500 11px/1.7 var(--mono);color:var(--ink2);background:#eef0f4;border:1px solid var(--line2);border-radius:6px;padding:0 6px;margin:0 2px;white-space:nowrap;display:inline-flex;gap:4px;align-items:center}
+.cite:hover{border-color:var(--hum);color:var(--hum)}
+.cite.badcite{background:var(--bad-bg);color:var(--bad);border-color:transparent}
+
+.draft{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--ai);border-radius:12px;padding:20px 24px;line-height:1.9;color:var(--ink2)}
+.position{display:flex;gap:10px;align-items:center;margin-bottom:14px;font-size:13px;color:var(--muted)}
+.badges{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+
+.signgrid{display:grid;gap:12px}
+.tick{display:flex;gap:12px;align-items:center;padding:14px 18px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);cursor:pointer;font-size:13px}
+.tick input{accent-color:var(--hum);width:16px;height:16px}
+.signrow{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:10px}
+select{background:var(--panel);border:1px solid var(--line2);border-radius:10px;padding:9px 12px}
+.btn{display:inline-flex;gap:8px;align-items:center;background:var(--hum);color:#fff;border:0;border-radius:10px;padding:10px 18px;cursor:pointer;font-weight:650}
+.btn[disabled]{opacity:.35;cursor:not-allowed}
+.fine{font-size:12px;color:var(--muted)}
+details.audit{margin-top:20px}
+details.audit summary{cursor:pointer;font-size:12.5px;color:var(--muted);display:flex;gap:6px;align-items:center;list-style:none}
+details.audit pre{font:11.5px/1.6 var(--mono);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;max-height:220px;overflow:auto;white-space:pre-wrap;margin:8px 0 0;color:var(--ink2)}
+
+.verdictgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.vbox{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+.vbox .t{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;gap:6px;align-items:center}
+.vbox b{font-size:14px}
+.lesson{display:flex;gap:14px;align-items:flex-start;margin-top:18px;padding:18px 22px;border-radius:12px;background:var(--hum-bg);font-size:13.5px;color:var(--ink)}
+.lesson svg{color:var(--hum);margin-top:1px}
+
+/* docs */
+aside{position:sticky;top:96px;align-self:start;max-height:calc(100vh - 120px);display:flex;flex-direction:column}
+aside .card{padding:22px 24px;display:flex;flex-direction:column;min-height:0}
+.dh{display:flex;gap:8px;align-items:center;font-weight:600;margin-bottom:6px}
+.dh svg{color:var(--hum)}
+.dsub{font-size:12.5px;color:var(--muted);margin-bottom:16px}
+.doctabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.doctabs button{all:unset;cursor:pointer;font-size:12px;padding:6px 12px;border-radius:9px;border:1px solid var(--line2);color:var(--ink2)}
+.doctabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.doc{overflow:auto;font:11.5px/1.7 var(--mono);background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 0;min-height:0}
+.doc div{display:grid;grid-template-columns:24px 1fr;gap:10px;padding:3px 14px;white-space:pre-wrap;word-break:break-word;color:var(--ink2)}
+.doc div span:first-child{color:var(--faint);text-align:right}
+.doc div.hl{background:var(--hl);color:var(--ink);box-shadow:inset 3px 0 0 var(--hum)}
+
+@media (max-width:1180px){.wrap{grid-template-columns:230px minmax(0,1fr)} aside{grid-column:1/-1;position:static;max-height:none}}
+@media (max-width:820px){
+  .wrap{grid-template-columns:minmax(0,1fr);padding:16px;gap:20px}
+  main{gap:20px} .card{padding:20px 18px}
+  nav.cases{flex-direction:row;overflow-x:auto;padding-bottom:4px} .grp,.navkey{display:none}
+  .cbtn{flex:none;max-width:200px}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pipe{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:16px} .node:nth-child(4)::before{display:none}
+  .checks,.verdictgrid{grid-template-columns:minmax(0,1fr)}
+  .row{grid-template-columns:repeat(2,minmax(0,1fr))} .row>:first-child{grid-column:1/-1}
+  .cmp{grid-template-columns:minmax(0,1fr)} .eq{width:auto}
+  .who{margin-left:0} .sh{flex-wrap:wrap}
+  .switch{margin-left:0}
+  header{padding:12px 16px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo"><svg class="i" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 14l2 2 4-4"/></svg></div>
+    <div><h1>Tax Notice Triage</h1><div class="sub">Demo · made-up data · AI answers are pre-written, the checks run live</div></div>
+  </div>
+  <div class="legend" id="legend"></div>
+  <label class="switch" title="Proposed fix: one line in a document can explain only one amount">
+    <input type="checkbox" id="guard"><span class="track"></span><span>Stop reusing evidence <span class="fine">(v2 fix)</span></span>
+  </label>
+</header>
+<div class="wrap">
+  <nav class="cases" id="nav"></nav>
+  <main id="main"></main>
+  <aside>
+    <div class="card">
+      <div class="dh"><svg class="i" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>Source documents</div>
+      <div class="dsub">Click any grey <span class="cite">doc:L3</span> tag to jump to that exact line.</div>
+      <div class="doctabs" id="doctabs"></div>
+      <div class="doc" id="doc"></div>
+    </div>
+  </aside>
+</div>
+<script src="rules.js"></script>
+<script src="cases.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const state = { idx: 0, doc: "notice", hl: null, guard: false, audit: {} };
+
+// ───────── icons (inline SVG, stroke style) ─────────
+const P = {
+  file:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
+  ai:'<path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.8z"/><path d="M19 14.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>',
+  code:'<path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/>',
+  user:'<circle cx="9" cy="7" r="4"/><path d="M2 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2M16 11l2 2 4-4"/>',
+  list:'<path d="M3 6l2 2 3-3M3 13l2 2 3-3M11 6h10M11 13h10M11 20h10"/>',
+  scale:'<path d="M12 3v18M7 21h10M5 7h14M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0z"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
+  pen:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  check:'<path d="M20 6L9 17l-5-5"/>',
+  x:'<path d="M18 6L6 18M6 6l12 12"/>',
+  alert:'<path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  help:'<circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/>',
+  bulb:'<path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/>',
+  flask:'<path d="M9 3h6M10 3v6L4 19a2 2 0 0 0 1.7 3h12.6A2 2 0 0 0 20 19l-6-10V3"/>',
+  history:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l4 2"/>',
+  shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/>',
+  coins:'<circle cx="9" cy="9" r="6"/><path d="M15.5 8.5A6 6 0 1 1 9 15.5"/>',
+  minus:'<path d="M5 12h14"/>',
+  flag:'<path d="M4 22V4M4 4h12l-2 4 2 4H4"/>',
+  link:'<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
+  stop:'<circle cx="12" cy="12" r="9"/><path d="M8 12h8"/>',
+  target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+};
+const ic = (n, cls="") => `<svg class="i ${cls}" viewBox="0 0 24 24">${P[n]}</svg>`;
+
+function money(j, n){ if(n==null) return "?"; const R=RULES[j]; return R.currency + Number(n).toLocaleString(R.locale); }
+function cite(ref, bad){ const [d,l]=ref.split(":"); return `<button class="cite${bad?' badcite':''}" data-doc="${d}" data-line="${l}" title="Show this line">${esc(d)}:L${l}</button>`; }
+function recCite(c, id){ const r=c.records.find(x=>x.id===id); return r? cite(`${r.doc}:${r.line}`) : `<span class="cite badcite">${esc(id)}?</span>`; }
+const KIND_NAME = { prior_year_return: "last year's tax return", bank: "bank record", other: "supporting document", third_party: "third-party form", return: "filed return", tds_credit: "tax-credit claim" };
+
+// ───────── deterministic engine (real code, not canned) ─────────
+function run(c, guard){
+  const R = RULES[c.j]; const out = { checks: [], items: [], valid: true };
+  const recs = Object.fromEntries(c.records.map(r=>[r.id,r]));
+
+  // Step 2: validate what the AI extracted
+  const unreadable = c.items.filter(i=>i.reported==null||i.onReturn==null);
+  out.checks.push({ ok: !unreadable.length, text: unreadable.length ? `${unreadable.length} amount(s) couldn't be read` : "Every amount was read as a number", src: unreadable[0]?.src });
+  const sum = c.items.reduce((s,i)=>s+((i.reported??0)-(i.onReturn??0)),0);
+  out.checks.push({ ok: sum===c.notice.statedTotal, text: sum===c.notice.statedTotal ? `Line items add up to the notice's total (${money(c.j,c.notice.statedTotal)})` : `Line items add up to ${money(c.j,sum)}, but the notice's total is ${money(c.j,c.notice.statedTotal)}`, src: c.notice.totalSrc });
+  const yr = R.supportedYears.includes(c.notice.year);
+  out.checks.push({ ok: yr, text: yr ? `Rules exist for ${c.notice.yearText}` : `No checked rules for ${c.notice.yearText}, so the system refuses` });
+  const hasDate = !!(c.notice.issued || c.notice.respondBy);
+  out.checks.push({ ok: hasDate, text: hasDate ? "Notice date found, so the deadline is known" : "Notice date unreadable, so the deadline is unknown", src: "notice:3" });
+  out.valid = out.checks.every(x=>x.ok);
+  if(!out.valid) return out;
+
+  // Step 3: rebuild the notice from the taxpayer's own documents (join on payer + income type)
+  const consumed = new Set(c.matchedByNotice||[]);
+  for(const it of c.items){
+    const tp = c.records.filter(r=>r.kind==="third_party" && r.payer===it.payer && r.cat===it.cat);
+    const rt = c.records.filter(r=>r.kind==="return" && r.payer===it.payer && r.cat===it.cat);
+    rt.forEach(r=>consumed.add(r.id));
+    const tpSum = tp.reduce((s,r)=>s+r.amount,0), rtSum = rt.reduce((s,r)=>s+r.amount,0);
+    out.items.push({ it, delta: it.reported-it.onReturn, tp, rt, tpSum, rtSum, reproOk: tpSum===it.reported && rtSum===it.onReturn });
+  }
+
+  // Step 4: the rules table judges each AI suggestion
+  const usedAsAmount = new Set();
+  for(const x of out.items){
+    const props = (c.causes[x.it.id]||[]); let explained = 0; x.props = []; x.flags = [];
+    for(const p of props){
+      const rule = R.labels[p.label]; const v = { p, rule, ok: true, why: [], amount: 0 };
+      if(!rule){ v.ok=false; v.why.push(`"${p.label}" isn't one of the allowed reasons for ${R.name}`); }
+      else {
+        if(rule.exemptCategories){
+          const e = rule.exemptCategories.find(e=>e.category===x.it.cat);
+          if(!e) { v.ok=false; v.why.push(`This type of income isn't on the tax-free list (${rule.id})`); }
+          else if((e.fromYear!=null && c.notice.year<e.fromYear) || (e.toYear!=null && c.notice.year>e.toYear)){
+            v.ok=false; v.why.push(`This tax-free rule doesn't apply to ${c.notice.yearText}. ${e.ref}`);
+          }
+        }
+        if(rule.requiresKind && ![...(p.amountFrom||[]),...(p.support||[])].some(id=>recs[id]?.kind===rule.requiresKind)){
+          v.ok=false; v.why.push(`This reason needs ${KIND_NAME[rule.requiresKind]||rule.requiresKind} as proof, and none was provided (${rule.id})`);
+        }
+        if(rule.requiresSupportKinds && !(p.support||[]).some(id=>rule.requiresSupportKinds.includes(recs[id]?.kind))){
+          v.ok=false; v.why.push(`This reason needs supporting proof such as a bank record (${rule.id})`);
+        }
+        if(p.remainder && !rule.remainderAllowed){ v.ok=false; v.why.push(`This reason can't be used to cover "whatever is left over" (${rule.id})`); }
+        for(const id of (p.amountFrom||[])){
+          if(!recs[id]) { v.ok=false; v.why.push(`The cited document "${id}" doesn't exist`); continue; }
+          if(guard && (consumed.has(id) || usedAsAmount.has(id))){ v.ok=false; v.why.push(`Evidence reused: ${recs[id].doc}:L${recs[id].line} already explains other income, so it can't explain this too`); }
+        }
+      }
+      if(v.ok){
+        v.amount = p.remainder ? x.delta - explained : (p.amountFrom||[]).reduce((s,id)=>s+recs[id].amount,0);
+        if(p.remainder && v.amount<=0){ v.ok=false; v.why.push("Nothing is left over for this reason to explain"); }
+      }
+      if(v.ok){
+        explained += v.amount; (p.amountFrom||[]).forEach(id=>usedAsAmount.add(id));
+        if(rule.conflictKind){
+          const hit = c.records.find(r=>r.kind===rule.conflictKind && r.payer===x.it.payer);
+          if(hit) x.flags.push({ type:"conflict", text: rule.conflictMsg, src: `${hit.doc}:${hit.line}` });
+        }
+        if(rule.judgement) x.flags.push({ type:"judgement", text: rule.warn || rule.action });
+        if(p.remainder) x.flags.push({ type:"judgement", text: `The leftover ${money(c.j,v.amount)} is treated as "${rule.name}". The reviewer must confirm.` });
+        if(p.confidence < 0.65) x.flags.push({ type:"judgement", text: `The AI isn't sure about this one (confidence ${Math.round(p.confidence*100)}%).` });
+      }
+      x.props.push(v);
+    }
+    x.explained = explained; x.residue = x.delta - explained;
+    const anyRejected = x.props.some(v=>!v.ok);
+    x.status = x.residue!==0 ? "residue" : x.flags.some(f=>f.type==="conflict") ? "conflict" : (x.flags.length||anyRejected) ? "review" : "closed";
+    x.responses = [...new Set(x.props.filter(v=>v.ok).map(v=>v.rule.response))];
+    if(x.residue===x.delta && anyRejected && R.labels.genuinely_omitted) x.suggest = "None of the AI's reasons hold up. Most likely the income really was missed, so the answer is probably Agree. The reviewer confirms.";
+  }
+  const blockers = out.items.filter(x=>x.status==="residue"||x.status==="conflict"||!x.reproOk);
+  out.draftAllowed = blockers.length===0 && !!c.draft;
+  const resp = out.items.flatMap(x=>x.responses);
+  out.overall = !resp.length ? "-" : resp.every(r=>r==="Agree") ? "Agree" : resp.every(r=>r==="Disagree") ? "Disagree" : "Partially agree";
+
+  // Reply checks: every source tag resolves; every amount traces to a document figure
+  if(c.draft){
+    const allowed = new Set();
+    c.items.forEach(i=>{ allowed.add(i.reported); allowed.add(i.onReturn); allowed.add(i.reported-i.onReturn); });
+    c.records.forEach(r=>allowed.add(r.amount));
+    out.items.forEach(x=>x.props.forEach(v=>v.ok && allowed.add(v.amount)));
+    const cites = [...c.draft.matchAll(/\{\{(\w+):(\d+)\}\}/g)].map(m=>({ref:`${m[1]}:${m[2]}`, ok: !!c.docs[m[1]] && +m[2]>=1 && +m[2]<=c.docs[m[1]].lines.length}));
+    const amts = [...c.draft.matchAll(/[₹$]\s?([\d,]+)/g)].map(m=>{ const n=+m[1].replace(/,/g,""); return {n, ok: allowed.has(n)}; });
+    out.draftChecks = { cites, amts };
+  }
+  return out;
+}
+
+function deadline(c){
+  const R = RULES[c.j];
+  let d = null;
+  if(R.deadline.type==="printed") d = c.notice.respondBy;
+  else if(c.notice.issued){ const t=new Date(c.notice.issued+"T00:00:00"); t.setDate(t.getDate()+R.deadline.days); d=t.toISOString().slice(0,10); }
+  if(!d) return { text: "Unknown", days: null };
+  const days = Math.round((new Date(d+"T00:00:00") - new Date(new Date().toDateString()))/86400000);
+  return { text: new Date(d+"T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}), days };
+}
+
+function log(c, msg){ (state.audit[c.id] ||= []).push(`${new Date().toISOString().replace("T"," ").slice(0,19)}Z  ${msg}`); }
+
+// ───────── helpers for the page ─────────
+const STATUS = {
+  closed:   { cls:"ok",   icon:"check", text:"Fully explained" },
+  review:   { cls:"warn", icon:"help",  text:"Explained · needs a human check" },
+  conflict: { cls:"bad",  icon:"alert", text:"Contradiction found" },
+  residue:  { cls:"bad",  icon:"stop",  text:"Part of the gap is unexplained" },
+};
+function pill(cls, icon, text){ return `<span class="pill ${cls}">${icon?ic(icon,"sm"):""}${esc(text)}</span>`; }
+function verdictFor(c){
+  const v = c.expect.verdict;
+  if(v.includes("/")){ const [a,b]=v.split("/").map(s=>s.trim()); return state.guard ? b.replace("with ledger guard","with the fix") : a; }
+  return v;
+}
+function verdictPill(v){ const cls = v.startsWith("FAIL") ? "bad" : v.includes("(") ? "warn" : "ok"; return pill(cls, cls==="bad"?"x":"check", v); }
+function confColor(p){ return p>=0.8 ? "var(--ok)" : p>=0.65 ? "var(--hum)" : "var(--bad)"; }
+
+function outcome(c, o){
+  if(!o.valid) return { cls:"bad", icon:"stop", title:"Stopped at step 2: the notice couldn't be read reliably", sub:"A person re-types the unclear parts before anything else happens." };
+  if(!o.draftAllowed){
+    const r = [];
+    if(o.items.some(x=>!x.reproOk)) r.push("the notice's numbers couldn't be rebuilt");
+    if(o.items.some(x=>x.status==="conflict")) r.push("a rule found a contradiction in the return");
+    if(o.items.some(x=>x.status==="residue")) r.push("part of the gap has no document behind it");
+    return { cls:"bad", icon:"shield", title:"Reply held back for a human", sub:"Why: " + r.join("; ") + ". The AI is not asked to write around it." };
+  }
+  if(o.items.some(x=>x.status==="review")) return { cls:"warn", icon:"help", title:`Reply drafted (${o.overall}), with points to check`, sub:"Every amount is backed by a document, but the reviewer must confirm the flagged points." };
+  return { cls:"ok", icon:"check", title:`Reply drafted (${o.overall}) and fully backed by documents`, sub:"Every amount in the gap is explained by a cited line. Ready for sign-off." };
+}
+
+// ───────── rendering ─────────
+function renderLegend(){
+  $("#legend").innerHTML = `<span class="chip ai">${ic("ai","sm")}AI reads &amp; suggests</span><span class="chip code">${ic("code","sm")}Code checks</span><span class="chip hum">${ic("user","sm")}Human decides</span>`;
+}
+function renderNav(){
+  const dot = c => { const v=verdictFor(c); return v.startsWith("FAIL") ? "var(--bad)" : v.includes("(") ? "var(--hum)" : "var(--ok)"; };
+  const g = j => CASES.map((c,i)=>c.j!==j?"":`<button class="cbtn ${i===state.idx?'on':''}" data-i="${i}"><span class="dot" style="background:${dot(c)}"></span><span class="cid">${c.id}</span><span class="ct">${esc(c.title)}</span></button>`).join("");
+  $("#nav").innerHTML = `<div class="grp">${ic("flag","sm")}India · tax office notice</div>${g("IN")}<div class="grp">${ic("flag","sm")}USA · IRS CP2000</div>${g("US")}
+    <div class="navkey"><b style="color:var(--ink2)">Did the system get it right?</b>
+      <span><i class="dot" style="width:8px;height:8px;border-radius:50%;background:var(--ok)"></i>Yes</span>
+      <span><i class="dot" style="width:8px;height:8px;border-radius:50%;background:var(--hum)"></i>Yes, by stopping or flagging</span>
+      <span><i class="dot" style="width:8px;height:8px;border-radius:50%;background:var(--bad)"></i>No, a known failure</span></div>`;
+}
+
+function stepHead(n, lane, icon, title, sub, who){
+  return `<div class="sh ${lane}"><div class="si">${ic(icon)}</div><div><h3>${n?`<span class="n">STEP ${n}</span>`:""}${title}</h3><p>${sub}</p></div><div class="who">${who}</div></div>`;
+}
+const WHO = { ai:`<span class="chip ai">${ic("ai","sm")}AI</span>`, code:`<span class="chip code">${ic("code","sm")}Code</span>`, hum:`<span class="chip hum">${ic("user","sm")}Human</span>` };
+
+function render(){
+  const c = CASES[state.idx], R = RULES[c.j], o = run(c, state.guard), dl = deadline(c), oc = outcome(c,o);
+  if(!state.audit[c.id]){
+    log(c, `read      notice + ${Object.keys(c.docs).length-1} taxpayer documents (AI output pre-written, no model called)`);
+    log(c, `check     ${o.valid ? "PASS" : "FAIL: " + o.checks.filter(x=>!x.ok).map(x=>x.text).join("; ")}`);
+    log(c, `rules     table ${RULES.version} (${RULES.reviewedBy})`);
+  }
+  const explained = o.valid ? o.items.reduce((s,x)=>s+x.explained,0) : null;
+  const residue = o.valid ? o.items.reduce((s,x)=>s+x.residue,0) : null;
+
+  // ── hero
+  const dCls = dl.days==null ? "bad" : dl.days<0 ? "bad" : dl.days<=7 ? "warn" : "";
+  const dSub = dl.days==null ? "Date unreadable" : dl.days<0 ? `${-dl.days} days overdue` : `${dl.days} days left`;
+  let h = `<section class="card hero">
+    <div class="eyebrow">${pill("ghost","flag",R.name)}${pill("ghost","file",c.notice.type+" · "+c.notice.yearText)}<span class="cid" style="font-family:var(--mono)">${c.id}</span></div>
+    <h2>${esc(c.title)}</h2>
+    <div class="kpis">
+      <div class="kpi"><span class="k">${ic("coins","sm")}Tax office says was missed</span><span class="v">${money(c.j,c.notice.statedTotal)}</span><span class="s">added to taxable income</span></div>
+      <div class="kpi"><span class="k">${ic("check","sm")}Explained by documents</span><span class="v ${explained?'ok':''}">${explained==null?"—":money(c.j,explained)}</span><span class="s">${explained==null?"not reached":"each amount cites a line"}</span></div>
+      <div class="kpi"><span class="k">${ic("help","sm")}Still unexplained</span><span class="v ${residue?'bad':residue===0?'ok':''}">${residue==null?"—":money(c.j,residue)}</span><span class="s">${residue==null?"not reached":residue?"goes to a human":"nothing left over"}</span></div>
+      <div class="kpi"><span class="k">${ic("clock","sm")}Reply due</span><span class="v ${dCls}">${dl.text}</span><span class="s">${dSub}</span></div>
+    </div>
+    <div class="banner ${oc.cls}"><div class="bi">${ic(oc.icon,"lg")}</div><div><b>${esc(oc.title)}</b><span>${esc(oc.sub)}</span></div></div>
+  </section>`;
+
+  // ── pipeline infographic
+  const st = [];
+  st.push("ok");                                                    // 1 read
+  st.push(o.valid ? "ok" : "bad");                                  // 2 check
+  st.push(!o.valid ? "skip" : o.items.every(x=>x.reproOk) ? "ok" : "bad");   // 3 rebuild
+  st.push(!o.valid ? "skip" : o.items.some(x=>x.status==="residue"||x.status==="conflict") ? "bad" : o.items.some(x=>x.status==="review") ? "warn" : "ok");
+  st.push(!o.valid ? "skip" : o.draftAllowed ? (o.draftChecks.cites.every(x=>x.ok)&&o.draftChecks.amts.every(x=>x.ok) ? "ok" : "bad") : "bad");
+  st.push("warn");                                                  // human always acts
+  const NODES = [["ai","file","Read the notice"],["code","list","Check the reading"],["code","scale","Rebuild the numbers"],["mix","search","Explain the gap"],["ai","pen","Write the reply"],["hum","user","Human signs off"]];
+  const stIcon = { ok:"check", bad:"x", warn:"help", skip:"minus" };
+  h += `<section class="card"><div class="pipe">${NODES.map(([lane,icon,label],i)=>`
+      <button class="node ${lane} ${st[i]==='skip'?'skip':''} ${i>0&&st[i-1]==='ok'?'done':''}" data-jump="s${i+1}">
+        <span class="ring">${ic(icon,"lg")}<span class="st ${st[i]}">${ic(stIcon[st[i]],"sm")}</span></span>
+        <span class="nn">${i<5?"STEP "+(i+1):"FINAL"}</span><span class="nl">${label}</span>
+      </button>`).join("")}</div></section>`;
+
+  // ── step 1
+  h += `<section class="card step" id="s1">${stepHead(1,"ai","file","Read the notice","The AI pulls out each amount the tax office questioned, and the exact line it came from.",WHO.ai)}
+    <div class="rows">${c.items.map(i=>`<div class="row">
+      <div><span class="name">${esc(i.desc)}</span><span class="payer" style="display:block">${esc(i.payer)}</span></div>
+      <div><span class="lab">Reported by payer</span><span class="val">${money(c.j,i.reported)}</span></div>
+      <div><span class="lab">Shown on return</span><span class="val">${money(c.j,i.onReturn)}</span></div>
+      <div><span class="lab">Gap</span><span class="val" style="color:var(--warn)">${i.reported==null?"?":money(c.j,i.reported-i.onReturn)}</span></div>
+      <div>${cite(i.src)}</div></div>`).join("")}</div>
+    <div class="fine" style="margin-top:10px">The taxpayer's own documents are read the same way: ${c.records.length} records, each tied to a line.</div></section>`;
+
+  // ── step 2
+  h += `<section class="card step" id="s2">${stepHead(2,"code","list","Check the AI read it correctly","Before any reasoning, code confirms the numbers are readable and add up. If not, it stops.",WHO.code)}
+    <div class="checks">${o.checks.map(x=>`<div class="ck ${x.ok?'ok':'bad'}"><span class="ic">${ic(x.ok?"check":"x","sm")}</span><span>${esc(x.text)} ${x.src?cite(x.src):""}</span></div>`).join("")}</div>
+    ${!o.valid ? `<div class="call bad">${ic("stop")}<span><b>Stopped here.</b> A person must get a clean copy and re-type the unclear parts. The system won't guess missing numbers.</span></div>` : ""}</section>`;
+
+  if(!o.valid){
+    h += reviewerQs(c);
+  } else {
+    // ── step 3
+    h += `<section class="card step" id="s3">${stepHead(3,"code","scale","Rebuild the tax office's numbers","The tax office matched payer reports against the return. Code repeats that match using the taxpayer's own copies. If it can't get the same numbers, nothing after this is trusted.",WHO.code)}
+      ${o.items.map(x=>`<div class="itemname">${esc(x.it.desc)} ${x.reproOk?pill("ok","check","Same numbers"):pill("bad","x","Can't rebuild")}</div>
+        <div class="cmp">
+          <div class="cmpbox"><div class="t">${ic("file","sm")}The notice says</div>
+            <div class="l"><span>Payer reported</span><b>${money(c.j,x.it.reported)}</b></div>
+            <div class="l"><span>Return shows</span><b>${money(c.j,x.it.onReturn)}</b></div></div>
+          <div class="eq ${x.reproOk?'ok':'bad'}"><span>${ic(x.reproOk?"check":"x")}</span></div>
+          <div class="cmpbox"><div class="t">${ic("link","sm")}Taxpayer's documents say</div>
+            <div class="l"><span>Payer reported ${x.tp.map(r=>cite(`${r.doc}:${r.line}`)).join("")}</span><b>${money(c.j,x.tpSum)}</b></div>
+            <div class="l"><span>Return shows ${x.rt.map(r=>cite(`${r.doc}:${r.line}`)).join("")||'<span class="fine">(no matching line)</span>'}</span><b>${money(c.j,x.rtSum)}</b></div></div>
+        </div>`).join("")}
+      <div class="fine">Matched on payer name + type of income, the same way the tax office's computer does it.</div></section>`;
+
+    // ── step 4
+    h += `<section class="card step" id="s4">${stepHead(4,"mix","search","Explain the gap","The AI suggests a reason and points to the documents that prove it. Code checks the reason against the rules table and adds up the amounts. The gap closes only when nothing is left over.",WHO.ai+WHO.code)}
+      ${o.items.map(x=>{
+        const S = STATUS[x.status];
+        const segs = x.props.filter(v=>v.ok && v.amount>0).map(v=>{ const w=Math.max(4,100*v.amount/x.delta); return `<div class="seg exp ${v.p.remainder?'rem':''}" style="width:${w}%" title="${esc(v.rule.name)}: ${money(c.j,v.amount)}">${w>18?money(c.j,v.amount):""}</div>`; }).join("");
+        const resSeg = x.residue>0 ? `<div class="seg res" style="width:${Math.max(4,100*x.residue/x.delta)}%" title="Unexplained: ${money(c.j,x.residue)}">${100*x.residue/x.delta>18?money(c.j,x.residue):""}</div>` : "";
+        return `<div class="gap">
+          <div class="gaphead"><b>${esc(x.it.desc)}: gap of ${money(c.j,x.delta)}</b>${pill(S.cls,S.icon,S.text)}</div>
+          <div class="bar">${segs}${resSeg}</div>
+          <div class="gapkey"><span><i style="background:var(--code)"></i>Explained ${money(c.j,x.explained)}</span><span><i style="background:var(--bad)"></i>Unexplained ${money(c.j,x.residue)}</span></div>
+        </div>
+        ${x.props.length? "" : `<div class="call warn">${ic("help")}<span>The AI didn't suggest any reason for this item.</span></div>`}
+        ${x.props.map(v=>`<div class="prop ${v.ok?'':'rej'}">
+          <div class="ptop">${ic("ai","sm")}<span class="ttl">AI suggests: ${esc(v.rule?v.rule.name:v.p.label)}</span>${v.rule?`<span class="rid">${v.rule.id}</span>`:""}
+            ${v.ok?pill("ok","check",`Accepted · ${money(c.j,v.amount)}${v.p.remainder?" (the rest)":""}`):pill("bad","x","Rejected by the rules")}
+            <span class="conf">AI confidence <span class="meter"><i style="width:${v.p.confidence*100}%;background:${confColor(v.p.confidence)}"></i></span>${Math.round(v.p.confidence*100)}%</span></div>
+          <div class="why">${ic("ai","sm")}<span>${esc(v.p.rationale)}</span></div>
+          <div class="ev">Proof cited: ${(v.p.amountFrom||[]).map(id=>recCite(c,id)).join("")||'<span>none</span>'} ${(v.p.support||[]).length?`<span style="margin-left:6px">Backing:</span> ${(v.p.support||[]).map(id=>recCite(c,id)).join("")}`:""}</div>
+          ${v.why.map(w=>`<div class="call bad">${ic("x","sm")}<span>${esc(w)}</span></div>`).join("")}
+        </div>`).join("")}
+        ${x.flags.map(f=>f.type==='conflict'
+          ? `<div class="call bad">${ic("alert")}<span><b>Contradiction in the return.</b> ${esc(f.text)} ${f.src?cite(f.src):""}</span></div>`
+          : `<div class="call warn">${ic("help")}<span><b>Reviewer, check this:</b> ${esc(f.text)}</span></div>`).join("")}
+        ${x.suggest?`<div class="call hum">${ic("bulb")}<span>${esc(x.suggest)}</span></div>`:""}`;
+      }).join('<hr class="sep">')}
+      <div class="fine" style="margin-top:12px">${ic("shield","sm")} Amounts always come from the cited documents, never from the AI's own maths.</div>
+    </section>`;
+
+    // ── step 5
+    h += `<section class="card step" id="s5">${stepHead(5,"ai","pen","Write the reply","The AI drafts the reply to the tax office. Code checks that every source tag points to a real line and every amount comes from a document.",WHO.ai+WHO.code)}`;
+    if(o.draftAllowed){
+      const dc = o.draftChecks, cOk = dc.cites.every(x=>x.ok), aOk = dc.amts.every(x=>x.ok);
+      const body = esc(c.draft).replace(/\{\{(\w+):(\d+)\}\}/g,(m,d,l)=>cite(`${d}:${l}`, !(c.docs[d] && +l<=c.docs[d].lines.length)));
+      h += `<div class="position">Proposed answer to the tax office: ${pill(o.overall==="Agree"?"warn":"ok","flag",o.overall)}</div>
+        <div class="draft">${body}</div>
+        <div class="badges">${pill(cOk?"ok":"bad",cOk?"check":"x",`${dc.cites.filter(x=>x.ok).length}/${dc.cites.length} sources found`)}${pill(aOk?"ok":"bad",aOk?"check":"x",`${dc.amts.filter(x=>x.ok).length}/${dc.amts.length} amounts traced to documents`)}${dc.amts.filter(x=>!x.ok).map(x=>pill("bad","alert","untraced "+money(c.j,x.n))).join("")}</div>`;
+    } else {
+      h += `<div class="call bad">${ic("shield")}<span><b>Reply not written.</b> ${esc(oc.sub)} A person resolves this first.</span></div>`;
+    }
+    h += `</section>`;
+    h += reviewerQs(c);
+  }
+
+  // ── sign-off
+  const dis = !o.valid || !o.draftAllowed;
+  h += `<section class="card step" id="s6">${stepHead(0,"hum","user","A qualified person signs off","The system never files anything. A CA or tax professional checks, signs and submits the reply, and is accountable for it.",WHO.hum)}
+    <div class="signgrid">
+      <label class="tick"><input type="checkbox" class="rc"> I opened every source the reply cites</label>
+      <label class="tick"><input type="checkbox" class="rc"> I dealt with every warning above</label>
+      <label class="tick"><input type="checkbox" class="rc"> I checked the tax, interest and penalty in the notice myself (this tool doesn't calculate them)</label>
+      <div class="signrow"><select id="role" aria-label="Reviewer role">${R.reviewerRoles.map(r=>`<option>${r}</option>`).join("")}</select>
+        <button class="btn" id="sign" ${dis?'disabled':''}>${ic("pen","sm")}Sign: ${o.overall==="-"?"position":o.overall}</button>
+        ${dis?`<span class="fine">Locked: there's no reply to sign until the stop above is resolved.</span>`:""}</div>
+    </div>
+    <details class="audit"><summary>${ic("history","sm")}Audit trail (every step is logged)</summary><pre id="audit">${(state.audit[c.id]||[]).map(esc).join("\n")}</pre></details>
+  </section>`;
+
+  // ── test result
+  const v = verdictFor(c);
+  h += `<section class="card">${stepHead(0,"test","flask","Did the system get it right?","Compared with the answer I worked out by hand for this made-up case.","")}
+    <div class="verdictgrid">
+      <div class="vbox"><div class="t">${ic("target","sm")}Right answer</div><b>${esc(c.expect.truth)}</b></div>
+      <div class="vbox"><div class="t">${ic("code","sm")}What the system did</div><b>${esc(oc.title)}</b><div style="margin-top:8px">${verdictPill(v)}</div></div>
+    </div>
+    <div class="lesson">${ic("bulb")}<span>${esc(c.expect.lesson)}</span></div></section>`;
+
+  $("#main").innerHTML = h;
+  renderDocs(c);
+  const sign = $("#sign");
+  if(sign){
+    const upd = ()=>{ if(!dis) sign.disabled = ![...document.querySelectorAll(".rc")].every(x=>x.checked); };
+    document.querySelectorAll(".rc").forEach(x=>x.addEventListener("change",upd)); upd();
+    sign.addEventListener("click",()=>{ log(c, `SIGN-OFF  ${$("#role").value} · position ${o.overall} · ${o.draftChecks?.cites.length||0} sources verified`); render(); });
+  }
+}
+function reviewerQs(c){
+  return c.reviewerQuestions ? `<section class="card step">${stepHead(0,"hum","help","Question for the reviewer","The system couldn't answer this from the documents, so it asks instead of guessing.",WHO.hum)}
+    ${c.reviewerQuestions.map(q=>`<div class="call hum">${ic("help")}<span>${esc(q)}</span></div>`).join("")}</section>` : "";
+}
+
+function renderDocs(c){
+  if(!c.docs[state.doc]) state.doc = "notice";
+  $("#doctabs").innerHTML = Object.entries(c.docs).map(([k,d])=>`<button data-doc="${k}" class="${k===state.doc?'on':''}">${esc(d.name)}</button>`).join("");
+  const d = c.docs[state.doc];
+  $("#doc").innerHTML = d.lines.map((t,i)=>`<div class="${state.hl===`${state.doc}:${i+1}`?'hl':''}" id="L${i+1}"><span>${i+1}</span><span>${esc(t)}</span></div>`).join("");
+  if(state.hl?.startsWith(state.doc+":")) document.getElementById("L"+state.hl.split(":")[1])?.scrollIntoView({block:"nearest"});
+}
+
+document.addEventListener("click", e=>{
+  const n = e.target.closest(".cbtn"); if(n){ state.idx=+n.dataset.i; state.hl=null; state.doc="notice"; history.replaceState(null,"","#"+CASES[state.idx].id); renderNav(); render(); window.scrollTo({top:0}); return; }
+  const ci = e.target.closest(".cite[data-doc]"); if(ci){ state.doc=ci.dataset.doc; state.hl=`${ci.dataset.doc}:${ci.dataset.line}`; renderDocs(CASES[state.idx]); if(innerWidth<1180) $("aside").scrollIntoView({behavior:"smooth"}); return; }
+  const t = e.target.closest(".doctabs button"); if(t){ state.doc=t.dataset.doc; renderDocs(CASES[state.idx]); return; }
+  const j = e.target.closest(".node"); if(j){ document.getElementById(j.dataset.jump)?.scrollIntoView({behavior:"smooth"}); }
+});
+$("#guard").addEventListener("change", e=>{ state.guard=e.target.checked; renderNav(); render(); });
+const hash = location.hash.slice(1); const hi = CASES.findIndex(c=>c.id===hash); if(hi>=0) state.idx=hi;
+renderLegend(); renderNav(); render();
+</script>
+</body>
+</html>

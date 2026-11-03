@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600" font-family="Helvetica, Arial, sans-serif" font-size="12">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#333"/></marker>
+    <marker id="r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker>
+    <style>
+      .box{stroke-width:1.5;rx:8}
+      .h{fill:#fdf1dc;stroke:#b26a00} .d{fill:#e2f3ef;stroke:#0f7a6c} .l{fill:#efeafd;stroke:#6d4bd1} .k{fill:#ffffff;stroke:#555}
+      .t{font-weight:700} .s{fill:#444;font-size:11px}
+      .flow{stroke:#333;stroke-width:1.6;fill:none}
+      .esc{stroke:#b3261e;stroke-width:1.6;fill:none;stroke-dasharray:6 4}
+      .kn{stroke:#555;stroke-width:1.3;fill:none;stroke-dasharray:2 3}
+    </style>
+  </defs>
+  <rect width="1200" height="600" fill="#ffffff"/>
+  <text x="16" y="24" font-size="15" class="t">Tax Notice Triage: who does what (India s.143(1)(a) · US CP2000)</text>
+
+  <!-- lanes -->
+  <rect x="10" y="40" width="1180" height="120" fill="#fffaf1" stroke="#e8d8b8"/>
+  <rect x="10" y="170" width="1180" height="160" fill="#f3faf8" stroke="#c6e5de"/>
+  <rect x="10" y="340" width="1180" height="120" fill="#f8f6fe" stroke="#d9d0f5"/>
+  <rect x="10" y="470" width="1180" height="110" fill="#fafafa" stroke="#ddd"/>
+  <text x="20" y="64" class="t" fill="#b26a00">HUMAN</text><text x="20" y="80" class="s">accountable,</text><text x="20" y="94" class="s">judgement</text>
+  <text x="20" y="194" class="t" fill="#0f7a6c">DETERMINISTIC</text><text x="20" y="210" class="s">exact, auditable,</text><text x="20" y="224" class="s">re-runnable</text>
+  <text x="20" y="364" class="t" fill="#6d4bd1">LLM</text><text x="20" y="380" class="s">reads, labels,</text><text x="20" y="394" class="s">writes. Never</text><text x="20" y="408" class="s">computes or decides</text>
+  <text x="20" y="494" class="t" fill="#333">KNOWLEDGE</text><text x="20" y="510" class="s">where truth lives</text>
+
+  <!-- boxes -->
+  <rect class="box d" x="135" y="185" width="130" height="50"/><text x="200" y="206" text-anchor="middle" class="t">Notice + docs</text><text x="200" y="222" text-anchor="middle" class="s">AIS · 1099s · return</text>
+  <rect class="box d" x="135" y="260" width="130" height="50"/><text x="200" y="281" text-anchor="middle" class="t">Redact IDs</text><text x="200" y="297" text-anchor="middle" class="s">PAN / SSN / names</text>
+
+  <rect class="box l" x="290" y="370" width="140" height="60"/><text x="360" y="393" text-anchor="middle" class="t">1 Extract</text><text x="360" y="409" text-anchor="middle" class="s">line items + doc:line spans</text><text x="360" y="422" text-anchor="middle" class="s">(structured output)</text>
+
+  <rect class="box d" x="455" y="215" width="130" height="60"/><text x="520" y="238" text-anchor="middle" class="t">2 Validate</text><text x="520" y="254" text-anchor="middle" class="s">lines sum to total? year</text><text x="520" y="267" text-anchor="middle" class="s">in rules? dates read?</text>
+
+  <rect class="box d" x="610" y="215" width="130" height="60"/><text x="675" y="238" text-anchor="middle" class="t">3 Reproduce</text><text x="675" y="254" text-anchor="middle" class="s">rebuild notice figures</text><text x="675" y="267" text-anchor="middle" class="s">from taxpayer's docs</text>
+
+  <rect class="box l" x="765" y="370" width="140" height="60"/><text x="835" y="393" text-anchor="middle" class="t">4 Propose cause</text><text x="835" y="409" text-anchor="middle" class="s">closed label + evidence</text><text x="835" y="422" text-anchor="middle" class="s">ids + confidence</text>
+
+  <rect class="box d" x="765" y="215" width="140" height="60"/><text x="835" y="238" text-anchor="middle" class="t">4 Rules check</text><text x="835" y="254" text-anchor="middle" class="s">valid label/year/evidence?</text><text x="835" y="267" text-anchor="middle" class="s">residue = 0 exactly?</text>
+
+  <rect class="box l" x="930" y="370" width="130" height="60"/><text x="995" y="393" text-anchor="middle" class="t">5 Draft</text><text x="995" y="409" text-anchor="middle" class="s">plain language,</text><text x="995" y="422" text-anchor="middle" class="s">every claim cited</text>
+
+  <rect class="box d" x="930" y="215" width="130" height="60"/><text x="995" y="238" text-anchor="middle" class="t">5 Trace</text><text x="995" y="254" text-anchor="middle" class="s">citations resolve;</text><text x="995" y="267" text-anchor="middle" class="s">amounts are traced</text>
+
+  <rect class="box h" x="930" y="70" width="130" height="60"/><text x="995" y="93" text-anchor="middle" class="t">★ Sign-off</text><text x="995" y="109" text-anchor="middle" class="s">CA · CPA · EA · attorney</text><text x="995" y="122" text-anchor="middle" class="s">checks tax computation</text>
+  <rect class="box h" x="1080" y="70" width="100" height="60"/><text x="1130" y="93" text-anchor="middle" class="t">Human files</text><text x="1130" y="109" text-anchor="middle" class="s">portal / CP2000</text><text x="1130" y="122" text-anchor="middle" class="s">response form</text>
+
+  <rect class="box h" x="455" y="70" width="450" height="60"/><text x="680" y="93" text-anchor="middle" class="t">Escalation queue</text><text x="680" y="111" text-anchor="middle" class="s">re-key a bad scan · supply a missing document · decide a conflict · explain a residue</text>
+
+  <rect class="box k" x="290" y="495" width="300" height="60"/><text x="440" y="518" text-anchor="middle" class="t">Evidence store</text><text x="440" y="535" text-anchor="middle" class="s">every number ↔ doc:line span; immutable per case</text>
+  <rect class="box k" x="640" y="495" width="420" height="60"/><text x="850" y="518" text-anchor="middle" class="t">Rules table (code, versioned, effective-dated)</text><text x="850" y="535" text-anchor="middle" class="s">closed cause taxonomy · allowed response · required evidence · deadlines</text><text x="850" y="548" text-anchor="middle" class="s">maintained and signed by a qualified human; unknown tax year → refuse</text>
+
+  <!-- main flow -->
+  <path class="flow" d="M200 235 L200 258" marker-end="url(#a)"/>
+  <path class="flow" d="M200 310 L200 400 L288 400" marker-end="url(#a)"/>
+  <path class="flow" d="M430 400 L520 400 L520 277" marker-end="url(#a)"/>
+  <path class="flow" d="M585 245 L608 245" marker-end="url(#a)"/>
+  <path class="flow" d="M675 275 L675 400 L763 400" marker-end="url(#a)"/>
+  <path class="flow" d="M835 370 L835 277" marker-end="url(#a)"/>
+  <path class="flow" d="M905 260 L917 260 L917 400 L928 400" marker-end="url(#a)"/>
+  <path class="flow" d="M995 370 L995 277" marker-end="url(#a)"/>
+  <path class="flow" d="M995 215 L995 132" marker-end="url(#a)"/>
+  <path class="flow" d="M1060 100 L1078 100" marker-end="url(#a)"/>
+
+  <!-- escalations -->
+  <path class="esc" d="M520 215 L520 132" marker-end="url(#r)"/>
+  <path class="esc" d="M675 215 L675 132" marker-end="url(#r)"/>
+  <path class="esc" d="M835 215 L835 132" marker-end="url(#r)"/>
+  <text x="528" y="175" class="s" fill="#b3261e">fails</text><text x="683" y="175" class="s" fill="#b3261e">can't rebuild</text><text x="843" y="175" class="s" fill="#b3261e">residue / conflict</text>
+
+  <!-- knowledge links -->
+  <path class="kn" d="M360 430 L360 493" marker-end="url(#a)"/>
+  <path class="kn" d="M750 495 L750 245 L763 245" marker-end="url(#a)"/>
+  <text x="300" y="470" class="s">spans written</text>
+  <text x="682" y="488" class="s">rules read</text>
+</svg>
